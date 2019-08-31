@@ -13,14 +13,16 @@ const middlewareFactory = () => {
       return next(action)
     }
 
-    const lock = action.lock,
-          func = action.function;
+    const lock = action.lock
+    const func = action.function
 
-    let promise = lockToPromise.has(lock) ? lockToPromise.get(lock) : Promise.resolve();
-    promise = promise.then(_ => func(dispatch, getState));
-    
-    lockToPromise.set(lock, promise);
-    return promise;
+    let promise = lockToPromise.has(lock) ? lockToPromise.get(lock) : Promise.resolve()
+    //Ignore any potential error, this does not affect the control of the user and ensures
+    //isolation between synchronized calls (a previous failure won't cancel a new attempt)
+    promise = promise.catch(_ => null).then(_ => func(dispatch, getState))
+
+    lockToPromise.set(lock, promise)
+    return promise
   }
 }
 
